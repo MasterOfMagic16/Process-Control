@@ -15,3 +15,14 @@ ThetaP = Symbol("ThetaP")  # Deadtime
 # Standard Form Process Functions
 deltay = Function("deltay")  # output as a function of time
 deltaY = Symbol("deltaY")
+Output = Symbol("deltaOutput")
+
+# Controls
+Kc = Symbol("Kc")
+Ti = Symbol("Ti")
+Td = Symbol("Td")
+deltae = Function("deltae")
+deltac = Function("deltac")
+deltaE = Function("deltaE")
+deltaC = Function("deltaC")
+

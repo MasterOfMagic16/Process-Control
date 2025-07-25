@@ -4,42 +4,56 @@ from sympy.plotting import plot
 from config import *
 from symbols import *
 
-# Take Laplace Transform
-LaplaceODE = laplace_transform(ODE, t, s, noconds=True)
 
-# Replace Symbols
-deltaU = laplace_transform(deltau, t, s, noconds=True)
-LaplaceODE = LaplaceODE.subs({
-    laplace_transform(deltay(t), t, s, noconds=True): deltaY,
-    laplace_transform(deltau, t, s, noconds=True): deltaU,
-    deltay(0): 0,
-    diff(deltay(t), t).subs(t, 0): 0
-})
+def GetTransferFunction(ODE, output, forcing):
+    # Take Laplace Transform
+    LaplaceODE = laplace_transform(ODE, t, s, noconds=True)
 
-# Define Transfer Function
-Gp = solve(LaplaceODE, deltaY)[0] / deltaU
+    # Replace Symbols
+    Forcing = laplace_transform(forcing, t, s, noconds=True)
+    LaplaceODE = LaplaceODE.subs({
+        laplace_transform(output(t), t, s, noconds=True): Output,
+        laplace_transform(forcing, t, s, noconds=True): Forcing,
+        output(0): 0,
+        diff(output(t), t).subs(t, 0): 0
+    })
 
-# Add Dead Time
-Gp = Gp * exp(-ThetaP * s)
+    # Define Transfer Function
+    G = solve(LaplaceODE, Output)[0] / Forcing
 
-# Substitute parameters
-Gp = Gp.subs({
-    Kp: KpFlat,
-    Tp: TpFlat,
-    Tn: TnFlat,
-    Zeta: ZetaFlat,
-    ThetaP: ThetaPFlat,
-})
+    # Add Dead Time
+    G = G * exp(-ThetaP * s)
+
+    # Substitute parameters
+    G = G.subs({
+        Kp: KpFlat,
+        Tp: TpFlat,
+        Tn: TnFlat,
+        Zeta: ZetaFlat,
+        ThetaP: ThetaPFlat,
+        Kc: KcFlat,
+        Ti: TiFlat,
+        Td: TdFlat
+    })
+
+    return G, Forcing
+
+
+Gp, deltaU = GetTransferFunction(ProcessODE, deltay, deltau)
+deltaY = Gp * deltaU
 
 # Inverse Laplace
-deltaY = Gp * deltaU
 deltay = inverse_laplace_transform(deltaY, s, t)
-
-print(deltay)
 
 # Plot Function
 p1 = plot(deltay)
 
+# Controls
+ControllerODE = Kc * deltae(t) - deltac(t)
 
+Gc, deltaE = GetTransferFunction(ControllerODE, deltac, deltae)
+deltaC = Gc * deltaE
 
-
+# Inverse Laplace
+deltac = inverse_laplace_transform(deltaC, s, t)
+print(deltaC)
