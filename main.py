@@ -1,59 +1,45 @@
 from sympy.integrals import laplace_transform, inverse_laplace_transform
-from sympy import solve, exp
 from sympy.plotting import plot
 from config import *
 from symbols import *
 
 
-def GetTransferFunction(ODE, output, forcing):
-    # Take Laplace Transform
-    LaplaceODE = laplace_transform(ODE, t, s, noconds=True)
-
-    # Replace Symbols
-    Forcing = laplace_transform(forcing, t, s, noconds=True)
-    LaplaceODE = LaplaceODE.subs({
-        laplace_transform(output(t), t, s, noconds=True): Output,
-        laplace_transform(forcing, t, s, noconds=True): Forcing,
-        output(0): 0,
-        diff(output(t), t).subs(t, 0): 0
-    })
-
-    # Define Transfer Function
-    G = solve(LaplaceODE, Output)[0] / Forcing
-
-    # Add Dead Time
-    G = G * exp(-ThetaP * s)
-
-    # Substitute parameters
-    G = G.subs({
+# Function for flattening into numeric graph
+def Substitute(function):
+    return function.subs({
         Kp: KpFlat,
         Tp: TpFlat,
         Tn: TnFlat,
         Zeta: ZetaFlat,
         ThetaP: ThetaPFlat,
+        Kd: KdFlat,
         Kc: KcFlat,
         Ti: TiFlat,
         Td: TdFlat
     })
 
-    return G, Forcing
 
+# Laplace Transforms
+delta_Ysp = laplace_transform(delta_ysp, t, s)[0]
+delta_D = laplace_transform(delta_d, t, s)[0]
 
-Gp, deltaU = GetTransferFunction(ProcessODE, deltay, deltau)
-deltaY = Gp * deltaU
+# Standard Control Loop
+delta_Y = Gp*Gc / (1 + Gp*Gc) * delta_Ysp + Gd / (1 + Gp*Gc) * delta_D
+delta_Y = Substitute(delta_Y)
 
 # Inverse Laplace
-deltay = inverse_laplace_transform(deltaY, s, t)
+delta_y = inverse_laplace_transform(delta_Y, s, t)
 
 # Plot Function
-p1 = plot(deltay)
+p1 = plot(delta_y)
 
-# Controls
-ControllerODE = Kc * deltae(t) - deltac(t)
+print(delta_y)
 
-Gc, deltaE = GetTransferFunction(ControllerODE, deltac, deltae)
-deltaC = Gc * deltaE
+result = delta_y.subs({
+    t: 1000
+})
 
-# Inverse Laplace
-deltac = inverse_laplace_transform(deltaC, s, t)
-print(deltaC)
+print(result)
+
+# Offset is correct
+# Setpoint Eqn integrating is correct

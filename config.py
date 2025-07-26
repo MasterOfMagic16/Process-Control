@@ -1,23 +1,28 @@
-from sympy import Heaviside, DiracDelta, diff
+from sympy import Heaviside, DiracDelta, exp
 from symbols import *
-# Settings
+
+# Process Parameters
 KpFlat = 5
 TpFlat = 2
-TnFlat = 1
-ZetaFlat = .5
+TnFlat = .1
+ZetaFlat = .1
 ThetaPFlat = 0
 
-# deltau = DiracDelta(t)
-deltau = 10 * Heaviside(t)
+# Disturbance Parameters
+KdFlat = 5
 
-# ProcessODE = Tp * diff(deltay(t), t) + deltay(t) - Kp * deltau  # First Order
-ProcessODE = Tn**2 * diff(diff(deltay(t), t), t) + 2*Zeta*Tn*diff(deltay(t), t) + 1*deltay(t) - Kp * deltau  # Second Order
-# ProcessODE = diff(deltay(t), t) - Kp * deltau     # Integrating
+# Controls Parameters
+KcFlat = 2
+TiFlat = float('inf')
+TdFlat = 0
 
-# Could have a list of ODEs and run a for loop, then multiply transfer functions for higher order process
+# Influence Functions
+delta_ysp = 1
+delta_d = 0
 
-# Controls
-setpoint = 30
-KcFlat = 40
-TiFlat = False
-TdFlat = False
+# Transfer Functions
+# Gp = Kp / (Tp*s + 1) * exp(-ThetaP*s)  # FOPDT
+# Gp = Kp / ((Tn**2)*(s**2) + 2*Zeta*Tn*s + 1) * exp(-ThetaP*s) # SOPDT
+Gp = Kp / (1*s) * exp(-ThetaP*s)  # IPDT
+Gc = Kc + Kc / (Ti * s) + Kc * Td * s  # PID
+Gd = Kd
