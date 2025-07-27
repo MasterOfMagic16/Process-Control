@@ -5,7 +5,7 @@ Kp = Symbol("Kp")  # Steady State Process Gain: (Final Output - Initial Output) 
 Tp = Symbol("Tp")  # Time Constant Process: Essentially speed, > 0
 Tn = Symbol("Tn")  # 1 / frequency osc rad/sec
 Zeta = Symbol("Zeta")  # Damping Factor
-ThetaP = Symbol("ThetaP")  # Deadtime
+ThetaP = Symbol("ThetaP")  # DeadTime
 
 # Disturbance Parameters
 Kd = Symbol("Kd")
