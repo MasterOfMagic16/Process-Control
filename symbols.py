@@ -1,4 +1,4 @@
-from sympy import Symbol
+from sympy import Symbol, Function
 
 # Process Parameters
 Kp = Symbol("Kp")  # Steady State Process Gain: (Final Output - Initial Output) / (Final Input - Initial Input)
