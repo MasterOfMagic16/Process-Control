@@ -1,37 +1,36 @@
 from sympy.integrals import laplace_transform, inverse_laplace_transform
 from sympy.plotting import plot
 from sympy.solvers import solve
-from sympy import exp, Heaviside, diff, Function, lambdify, Integral
+from sympy import exp, Heaviside, diff, Function, lambdify, Integral, ode_order
 from symbols import *
 import matplotlib.pyplot as plt
 
 def Main(GUIData):
-    resolution = .00001
-    timeEnd = 1
+    # TODO: Determine whether things need subscripts or not (t)
+    # Simulation Settings TODO: Add to GUI
+    resolution = .0001
+    timeEnd = 10
 
+    # Pull GUI data used most often
     processType = GUIData["ProcessType"]
-    deadTimeType = GUIData["DeadTimeType"]
-    pControl = GUIData["ControlType"]["pControl"]
-    iControl = GUIData["ControlType"]["iControl"]
-    dControl = GUIData["ControlType"]["dControl"]
-    flatParams = GUIData["FlatParams"]
 
+    # General Functions
     delta_y = Function("delta_y")
-    # Define Controller Output to ODE
+
+    # Define Controller Output TODO: Verify Controller
     delta_ysp = GUIData["SetPointStepChange"]
     delta_e = delta_ysp - delta_y(t)
-    delta_c = 0*t  # A little weird but okay
-    if pControl:
+    delta_c = 0 * t  # TODO: A little weird but okay
+    if GUIData["ControlType"]["pControl"]:
         delta_c += Kc * delta_e
-    if iControl:
+    if GUIData["ControlType"]["iControl"]:
         delta_c += Kc / Ti * Integral(delta_e, (t, 0, t))
-    if dControl:
+    if GUIData["ControlType"]["dControl"]:
         delta_c += Kc * Td * diff(delta_e, t)
 
-    # Define ODE Manual Control, Controlled By Controller
+    # Define Process Manual Control ODE, Controlled By Controller
     delta_d = GUIData["DisturbanceStepChange"]
     delta_u = delta_c
-    ODE = 0
     if processType == "I":
         ODE = diff(delta_y(t), t) - Kp * delta_u - Kd * delta_d
     elif processType == "FO":
@@ -41,20 +40,45 @@ def Main(GUIData):
     else:
         print(f"Process Type: {processType} is not supported")
         raise ValueError()
-    if deadTimeType:
+    if GUIData["DeadTimeType"]:
         pass
-        # Ignore for now
+        # TODO: Allow For Deadtime
     ODE = ODE.subs(
         GUIData["FlatParams"]
     )
 
-    print(ODE)
-
     # Define Initial Conditions
     time = 0
     timeList = [time]
-    delta_yList = [delta_y]
+    delta_yList = [0]
 
+    # Solve for useful things
+    order = ode_order(ODE, delta_y(t))
+    highestOrderDeriv = solve(ODE, diff(delta_y(t), (t, order)))[0]
+
+    # Define The Highest Order Derivative Equation
+    # Define Initial Conditions
+    lambdas = []
+    derivList = []
+    for i in range(0, order):
+        lambdas.append(diff(delta_y(t), (t, i)))
+        derivList.append(0)
+    highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
+    derivList.append(highestOrderDeriv(*derivList))
+
+    while time <= timeEnd:
+        time += resolution
+        for i in range(len(derivList)-1):
+            derivList[i] += derivList[i+1]*resolution
+        derivList[-1] = highestOrderDeriv(*derivList[0:-1])
+        timeList.append(time)
+        delta_yList.append(derivList[0])
+
+    # TODO: Export CSV of Graph
+    plt.plot(timeList, delta_yList)
+    plt.show()
+
+    '''
     # Try Laplace to check above
     delta_Y = Symbol("delta_Y")
     LODE = laplace_transform(ODE, t, s, noconds=True)
@@ -74,11 +98,9 @@ def Main(GUIData):
 
     print(delta_y)
 
+    plt.plot(timeList, valueList)
+    '''
 
-
-    # Iterate (ignore possible manual intervention for now)
-    # while time <= timeEnd:
-    #   time += resolution
 
 
 '''
