@@ -7,6 +7,7 @@ root.title('Python Process Control Simulator')
 root.geometry('600x400')
 
 # Variable Initialization
+Laplace = tk.BooleanVar()
 
 # Process Select Variables
 processType = tk.StringVar()
@@ -66,6 +67,7 @@ def UpdateGUIData():
     })
     GUIData["DisturbanceStepChange"] = DistStepParam.get()
     GUIData["SetPointStepChange"] = SPStepParam.get()
+    GUIData["Laplace"] = Laplace.get()
 
 
 # Command Functions
@@ -205,6 +207,9 @@ tk.Entry(SPStepParamFrame, textvariable=SPStepParam, justify='center').grid(row=
 # Activation Button
 activateButton = tk.Button(root, text='Activate', command=Activate)
 activateButton.grid(row=4, sticky='nw')
+
+modeSwitch = tk.Checkbutton(root, text='Laplace On', variable=Laplace)
+modeSwitch.grid(row=5, sticky='n')
 
 # Loop Root
 root.mainloop()
