@@ -1,7 +1,7 @@
 from sympy.integrals import laplace_transform, inverse_laplace_transform
 from sympy.plotting import plot
 from sympy.solvers import solve
-from sympy import exp, Heaviside, diff, Function, lambdify, Integral, ode_order
+from sympy import exp, Heaviside, diff, Function, lambdify, Integral, ode_order, simplify
 from symbols import *
 import matplotlib.pyplot as plt
 
@@ -16,6 +16,7 @@ def Main(GUIData):
 
     # General Functions
     delta_y = Function("delta_y")
+    integral_error = Symbol("integrated_error")
 
     # Define Controller Output TODO: Verify Controller
     delta_ysp = GUIData["SetPointStepChange"]
@@ -24,7 +25,7 @@ def Main(GUIData):
     if GUIData["ControlType"]["pControl"]:
         delta_c += Kc * delta_e
     if GUIData["ControlType"]["iControl"]:
-        delta_c += Kc / Ti * Integral(delta_e, (t, 0, t))
+        delta_c += Kc / Ti * integral_error
     if GUIData["ControlType"]["dControl"]:
         delta_c += Kc * Td * diff(delta_e, t)
 
@@ -48,6 +49,7 @@ def Main(GUIData):
     )
 
     # Define Initial Conditions
+    integrated_error = 0
     time = 0
     timeList = [time]
     delta_yList = [0]
@@ -63,14 +65,18 @@ def Main(GUIData):
     for i in range(0, order):
         lambdas.append(diff(delta_y(t), (t, i)))
         derivList.append(0)
+    lambdas.append(integral_error)
+    print(highestOrderDeriv)
     highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
-    derivList.append(highestOrderDeriv(*derivList))
+    derivList.append(highestOrderDeriv(*derivList, integrated_error))
 
     while time <= timeEnd:
         time += resolution
         for i in range(len(derivList)-1):
             derivList[i] += derivList[i+1]*resolution
-        derivList[-1] = highestOrderDeriv(*derivList[0:-1])
+        error = delta_ysp - derivList[0]
+        integrated_error += error*resolution
+        derivList[-1] = highestOrderDeriv(*derivList[0:-1], integrated_error)
         timeList.append(time)
         delta_yList.append(derivList[0])
 
