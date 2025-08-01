@@ -214,8 +214,4 @@ modeSwitch.grid(row=5, sticky='n')
 # Loop Root
 root.mainloop()
 
-# TODO
-# Make it look nicer
-# Make deadtime work
-# Animate
-# Add a legend
+

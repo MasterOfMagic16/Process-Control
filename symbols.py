@@ -11,6 +11,7 @@ ThetaP = Symbol("ThetaP")  # DeadTime
 Kd = Symbol("Kd")
 
 # Controls Parameters
+integral_error = Symbol("integrated_error")
 Kc = Symbol("Kc")
 Ti = Symbol("Ti")
 Td = Symbol("Td")

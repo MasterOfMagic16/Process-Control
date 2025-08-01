@@ -1,15 +1,22 @@
 from sympy.integrals import laplace_transform, inverse_laplace_transform
 from sympy.plotting import plot
 from sympy.solvers import solve
-from sympy import exp, Heaviside, diff, Function, lambdify, Integral, ode_order, simplify
+from sympy import exp, diff, lambdify, ode_order
 from symbols import *
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def Main(GUIData):
     if not GUIData["Laplace"]:
-        # TODO: Determine whether things need subscripts or not (t)
+        # TODO: Fix derivative control discrepancy
+        # TODO
+        # Make it look nicer
+        # Make deadtime work
+        # Animate
+        # Add a legend
+
         # Simulation Settings TODO: Add to GUI
-        resolution = .0001
+        resolution = .001
         timeEnd = 10
 
         # Pull GUI data used most often
@@ -17,9 +24,8 @@ def Main(GUIData):
 
         # General Functions
         delta_y = Function("delta_y")
-        integral_error = Symbol("integrated_error")
 
-        # Define Controller Output TODO: Verify Controller
+        # Define Controller Output
         delta_ysp = GUIData["SetPointStepChange"]
         delta_e = delta_ysp - delta_y(t)
         delta_c = 0 * t  # TODO: A little weird but okay
@@ -67,7 +73,7 @@ def Main(GUIData):
             lambdas.append(diff(delta_y(t), (t, i)))
             derivList.append(0)
         lambdas.append(integral_error)
-        print(highestOrderDeriv)
+
         highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
         derivList.append(highestOrderDeriv(*derivList, integrated_error))
 
@@ -80,10 +86,16 @@ def Main(GUIData):
             derivList[-1] = highestOrderDeriv(*derivList[0:-1], integrated_error)
             timeList.append(time)
             delta_yList.append(derivList[0])
-
-        # TODO: Export CSV of Graph
         plt.plot(timeList, delta_yList)
         plt.show()
+
+        df = pd.DataFrame({
+            "Time (s)": timeList,
+            "Output (delta_y)": delta_yList
+        })
+        df.to_excel("simulation_output.xlsx", index=False)
+        print("Excel file saved as simulation_output.xlsx")
+
     else:
         processType = GUIData["ProcessType"]
         deadTimeType = GUIData["DeadTimeType"]
@@ -138,74 +150,9 @@ def Main(GUIData):
 
         # Flatten
         delta_Y = delta_Y.subs(GUIData["FlatParams"])
-        print(delta_Y)
 
         # Inverse Laplace
         delta_y = inverse_laplace_transform(delta_Y, s, t)
-        print(delta_y)
 
         # Plot
-        p1 = plot(delta_y, delta_d * Heaviside(t), delta_ysp * Heaviside(t))
-
-    '''
-    # Try Laplace to check above
-    delta_Y = Symbol("delta_Y")
-    LODE = laplace_transform(ODE, t, s, noconds=True)
-    print(LODE)
-    LODE = LODE.subs({
-        laplace_transform(delta_y(t), t, s, noconds=True): delta_Y,
-        delta_y(0): 0,
-    })
-    if processType == "SO":
-        LODE = LODE.subs({
-            diff(delta_y(t), t).subs(t, 0): 0
-        })
-    print(LODE)
-    delta_Y = solve(LODE, delta_Y)[0]
-    print(delta_Y)
-    delta_y = inverse_laplace_transform(delta_Y, s, t, noconds=True)
-
-    print(delta_y)
-
-    plt.plot(timeList, valueList)
-    '''
-
-
-
-'''
-def GenerateEulerCurve(ODE):
-    # Initial Conditions
-    time = 0
-    value = 0
-
-    # Resolution / Limits
-    h = .00001
-    endTime = 10
-
-    # Data Storage
-    timeList = [time]
-    valueList = [value]
-
-    dydt = solve(ODE, diff(delta_y(t), t))[0]
-    dydt = dydt.subs({
-        Kp: 1,
-        Tp: 10,
-        delta_d(t): 2,
-    })
-    dydt = lambdify(delta_y(t), dydt, modules='numpy')
-
-    # Evaluate
-    while time < endTime - h:
-        slope = dydt(value)
-        time += h
-        value += slope * h
-        timeList.append(time)
-        valueList.append(value)
-
-    plt.plot(timeList, valueList)
-    plt.show()
-    print(valueList[-1], timeList[-1])
-
-
-GenerateEulerCurve(Tp*diff(delta_y(t), t) + delta_y(t) - Kp*delta_d(t))
-'''
+        p1 = plot(delta_y)
