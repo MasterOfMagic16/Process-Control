@@ -93,7 +93,7 @@ def UpdateControlParamDisplay():
     TiParamFrame.pack_forget()
     TdParamFrame.pack_forget()
 
-    if pControl.get():
+    if pControl.get() or iControl.get() or dControl.get():
         KcParamFrame.pack()
     if iControl.get():
         TiParamFrame.pack()
