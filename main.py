@@ -44,8 +44,6 @@ def Main(GUIData):
     else:
         print(f"Process Type: {processType} is not supported")
         raise ValueError()
-    if GUIData["DeadTimeType"]:
-        pass
     ODE = ODE.subs(
         GUIData["Parameters"]
     )
@@ -55,6 +53,7 @@ def Main(GUIData):
     time = 0
     timeList = [time]
     delta_yList = [0]
+    delta_cList = [0]
 
     # Solve for useful things
     order = ode_order(ODE, delta_y(t))
@@ -63,28 +62,61 @@ def Main(GUIData):
     # Define The Highest Order Derivative Equation
     # Define Initial Conditions
     lambdas = []
-    derivList = []
+    realDerivList = []
+    seenDerivList = []
+    realDerivListCache = []
     for i in range(0, order):
         lambdas.append(diff(delta_y(t), (t, i)))
-        derivList.append(0)
+        realDerivList.append(0)
+        seenDerivList.append(0)
     lambdas.append(integral_error)
 
     highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
-    derivList.append(highestOrderDeriv(*derivList, integrated_error))
+    realDerivList.append(highestOrderDeriv(*realDerivList, integrated_error))
+    seenDerivList.append(0)
+    realDerivListCache.append(realDerivList.copy())
 
+    # DeadTime Start
+    # have two lists, current and time delayed
+    if GUIData["DeadTimeType"]:
+        deadTime = GUIData["Parameters"]["ThetaP"]
+    else:
+        deadTime = 0
+    # Before DeadTime
     while time <= timeEnd:
         time += resolution
-        for i in range(len(derivList)-1):
-            derivList[i] += derivList[i+1]*resolution
-        error = delta_ysp - derivList[0]
-        integrated_error += error*resolution
-        derivList[-1] = highestOrderDeriv(*derivList[0:-1], integrated_error)
-        timeList.append(time)
-        delta_yList.append(derivList[0])
 
+        # Update Seen Process
+        if time >= deadTime:
+            seenDerivList = realDerivListCache.pop(0)
+
+        # Update Real Process
+        for i in range(len(realDerivList)-1):
+            realDerivList[i] += realDerivList[i+1]*resolution
+        error = delta_ysp - seenDerivList[0]
+        integrated_error += error * resolution
+        realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
+
+        realDerivListCache.append(realDerivList.copy())
+        timeList.append(time)
+        delta_yList.append(seenDerivList[0])
+        delta_cList.append(5 * integrated_error)
+    '''
+    while time <= timeEnd:
+        time += resolution
+        for i in range(len(realDerivList)-1):
+            realDerivList[i] += realDerivList[i+1]*resolution
+        error = delta_ysp - realDerivList[0]
+        integrated_error += error*resolution
+        realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
+        timeList.append(time)
+        delta_yList.append(realDerivList[0])
+        delta_cList.append(5 * integrated_error)    # realDerivList[0])
+    '''
     df = pd.DataFrame({
         "Time (s)": timeList,
-        "Output (delta_y)": delta_yList
+        "Output (delta_y)": delta_yList,
+        "Controller": delta_cList
     })
     df.to_excel("simulation_output.xlsx", index=False)
     print("Excel file saved as simulation_output.xlsx")

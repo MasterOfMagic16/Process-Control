@@ -5,7 +5,9 @@ class GUIVars:
     def __init__(self):
         # Simulation Variables
         self.stepSize = tk.DoubleVar()
+        self.stepSize.set(.001)
         self.duration = tk.DoubleVar()
+        self.duration.set(10)
 
         # Process Select Variables
         self.processType = tk.StringVar()
