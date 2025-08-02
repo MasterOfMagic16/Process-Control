@@ -5,7 +5,7 @@ from main import Main
 # Root
 root = tk.Tk()
 root.title('Python Process Control Simulator')
-root.geometry('600x400')
+root.geometry('620x450')
 
 # Variable Tracker
 guiVars = GUIVars()
@@ -31,12 +31,14 @@ def UpdateProcessConfigFrame():
 
 
 # Process Config Frame
-processConfigFrame = tk.LabelFrame(root, text="Process", borderwidth=2, relief='groove')
+processConfigFrame = tk.LabelFrame(root, text="Process", width=300, height=150, borderwidth=2, relief='groove')
+processConfigFrame.grid_propagate(False)
 processConfigFrame.grid(row=0, column=0, padx=5, sticky='nsew')
 
 # Process Select Frame
-processSelectFrame = tk.Frame(processConfigFrame)
-processSelectFrame.grid(row=0, column=0)
+processSelectFrame = tk.Frame(processConfigFrame, width=100, height=120, borderwidth=2, relief='groove')
+processSelectFrame.pack_propagate(False)
+processSelectFrame.grid(row=0, column=0, padx=5, sticky='nsew')
 tk.Label(processSelectFrame, text='Process Type:').pack(anchor='w')
 tk.Radiobutton(processSelectFrame, text="Integrating", variable=guiVars.processType, value='I', command=UpdateProcessConfigFrame).pack(anchor='w')
 tk.Radiobutton(processSelectFrame, text="First Order", variable=guiVars.processType, value='FO', command=UpdateProcessConfigFrame).pack(anchor='w')
@@ -44,7 +46,7 @@ tk.Radiobutton(processSelectFrame, text="Second Order", variable=guiVars.process
 tk.Checkbutton(processSelectFrame, text='DeadTime?', variable=guiVars.deadTimeType, command=UpdateProcessConfigFrame).pack(anchor='w')
 
 # Process Parameter Frame
-processParameterFrame = tk.Frame(processConfigFrame, width=175)
+processParameterFrame = tk.Frame(processConfigFrame, width=175, borderwidth=2, relief='groove')
 processParameterFrame.pack_propagate(False)
 processParameterFrame.grid(row=0, column=1, sticky='nsew')
 tk.Label(processParameterFrame, text='Process Parameters:').pack(anchor='e')
@@ -87,11 +89,9 @@ def UpdateControlConfigFrame():
 
 
 # Controller Config Frame
-controlConfigFrame = tk.LabelFrame(root, text="Controller", width=300, borderwidth=2, relief='groove')
-controlConfigFrame.grid(row=0, column=1, sticky='nsew')
+controlConfigFrame = tk.LabelFrame(root, text="Controller", width=300, height=150, borderwidth=2, relief='groove')
 controlConfigFrame.grid_propagate(False)
-controlConfigFrame.grid_columnconfigure(0, minsize=150)
-controlConfigFrame.grid_columnconfigure(1, minsize=150)
+controlConfigFrame.grid(row=0, column=1, padx=5, sticky='nsew')
 
 # Controller Select Frame
 controlSelectFrame = tk.Frame(controlConfigFrame, width=150)
