@@ -1,28 +1,19 @@
-from sympy.integrals import laplace_transform, inverse_laplace_transform
-from sympy.plotting import plot
 from sympy.solvers import solve
-from sympy import exp, diff, lambdify, ode_order
-from symbols import *
+from sympy import diff, lambdify, ode_order
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from symbols import *
+
+
 def Main(GUIData):
+    # TODO: There is a derivative control discrepancy
+    # TODO: Make deadtime work
+    # TODO: Animate
 
-
-
-
-
-
-    # TODO: Fix derivative control discrepancy
-    # TODO
-    # Make it look nicer
-    # Make deadtime work
-    # Animate
-    # Add a legend
-
-    # Simulation Settings TODO: Add to GUI
-    resolution = .001
-    timeEnd = 10
+    # Simulation Settings
+    resolution = GUIData["StepSize"]
+    timeEnd = GUIData["Duration"]
 
     # Pull GUI data used most often
     processType = GUIData["ProcessType"]
@@ -55,7 +46,6 @@ def Main(GUIData):
         raise ValueError()
     if GUIData["DeadTimeType"]:
         pass
-        # TODO: Allow For Deadtime
     ODE = ODE.subs(
         GUIData["Parameters"]
     )

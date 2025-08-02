@@ -3,6 +3,10 @@ import tkinter as tk
 
 class GUIVars:
     def __init__(self):
+        # Simulation Variables
+        self.stepSize = tk.DoubleVar()
+        self.duration = tk.DoubleVar()
+
         # Process Select Variables
         self.processType = tk.StringVar()
         self.processType.set('FO')
@@ -53,7 +57,9 @@ class GUIVars:
                 "dControl": self.dControl.get()
                 },
             "DisturbanceStepChange": self.DistStepParam.get(),
-            "SetPointStepChange": self.SPStepParam.get()
+            "SetPointStepChange": self.SPStepParam.get(),
+            "StepSize": self.stepSize.get(),
+            "Duration": self.duration.get()
         }
 
         return GUIData

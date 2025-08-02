@@ -5,9 +5,8 @@ from main import Main
 # Root
 root = tk.Tk()
 root.title('Python Process Control Simulator')
-root.geometry('620x280')
-
-#TODO: Make entry boxes smaller, not too small.
+root.geometry('620x350')
+root.resizable(False, False)
 
 # Variable Tracker
 guiVars = GUIVars()
@@ -155,13 +154,25 @@ tk.Label(SPStepParamFrame, text='Step Change:').grid(row=0, column=0)
 tk.Entry(SPStepParamFrame, textvariable=guiVars.SPStepParam, justify='center').grid(row=1)
 
 
+# Simulation Frame
+SimulationFrame = tk.LabelFrame(root, text='Simulation', width=185, height=100, borderwidth=2, relief='groove')
+SimulationFrame.grid_propagate(False)
+SimulationFrame.grid(row=2, columnspan=2)
+
+StepSizeFrame = tk.Frame(SimulationFrame)
+tk.Label(SimulationFrame, text='Step Size:').grid(row=0, column=0)
+tk.Entry(SimulationFrame, textvariable=guiVars.stepSize, justify='center').grid(row=0, column=1)
+
+DurationFrame = tk.Frame(SimulationFrame)
+tk.Label(SimulationFrame, text='Duration:').grid(row=1, column=0)
+tk.Entry(SimulationFrame, textvariable=guiVars.duration, justify='center').grid(row=1, column=1)
+
 # GO Button
 def RunSimulation():
     Main(guiVars.GetData())
 
 
-activateButton = tk.Button(root, text='Run Simulation', command=RunSimulation)
-activateButton.grid(row=2, columnspan=2, padx=5, pady=5, sticky='nsew')
+tk.Button(SimulationFrame, text='Run Simulation', command=RunSimulation).grid(row=2, columnspan=2, padx=5, pady=5)
 
 
 # Loop Root
