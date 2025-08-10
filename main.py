@@ -24,7 +24,7 @@ def Main(GUIData):
     # Define Controller Output
     delta_ysp = GUIData["SetPointStepChange"]
     delta_e = delta_ysp - delta_y(t)
-    delta_c = 0
+    delta_c = 0*t  # TODO: Kinda Weird
     if GUIData["ControlType"]["pControl"]:
         delta_c += Kc * delta_e
     if GUIData["ControlType"]["iControl"]:
@@ -47,6 +47,9 @@ def Main(GUIData):
     ODE = ODE.subs(
         GUIData["Parameters"]
     )
+    delta_c = delta_c.subs(
+        GUIData["Parameters"]
+    )
 
     # Define Initial Conditions
     integrated_error = 0
@@ -59,7 +62,7 @@ def Main(GUIData):
     order = ode_order(ODE, delta_y(t))
     highestOrderDeriv = solve(ODE, diff(delta_y(t), (t, order)))[0]
 
-    # Define The Highest Order Derivative Equation
+    # Define The Highest Order Derivative Equation, Controller Equation
     # Define Initial Conditions
     lambdas = []
     realDerivList = []
@@ -72,17 +75,20 @@ def Main(GUIData):
     lambdas.append(integral_error)
 
     highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
+    controller = lambdify(lambdas, delta_c, 'numpy')
+
     realDerivList.append(highestOrderDeriv(*realDerivList, integrated_error))
-    seenDerivList.append(0)
     realDerivListCache.append(realDerivList.copy())
 
-    # DeadTime Start
-    # have two lists, current and time delayed
-    if GUIData["DeadTimeType"]:
+    # Deadtime Set
+    if GUIData["DeadTimeType"] and GUIData["Parameters"]["ThetaP"] > 0:
         deadTime = GUIData["Parameters"]["ThetaP"]
+        seenDerivList.append(0)
     else:
         deadTime = 0
-    # Before DeadTime
+        seenDerivList.append(highestOrderDeriv(*realDerivList[0:-1], integrated_error))
+
+    # Generate Points
     while time <= timeEnd:
         time += resolution
 
@@ -100,19 +106,8 @@ def Main(GUIData):
         realDerivListCache.append(realDerivList.copy())
         timeList.append(time)
         delta_yList.append(seenDerivList[0])
-        delta_cList.append(5 * integrated_error)
-    '''
-    while time <= timeEnd:
-        time += resolution
-        for i in range(len(realDerivList)-1):
-            realDerivList[i] += realDerivList[i+1]*resolution
-        error = delta_ysp - realDerivList[0]
-        integrated_error += error*resolution
-        realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
-        timeList.append(time)
-        delta_yList.append(realDerivList[0])
-        delta_cList.append(5 * integrated_error)    # realDerivList[0])
-    '''
+        delta_cList.append(controller(*seenDerivList[0:-1], integrated_error))
+
     df = pd.DataFrame({
         "Time (s)": timeList,
         "Output (delta_y)": delta_yList,
@@ -122,6 +117,7 @@ def Main(GUIData):
     print("Excel file saved as simulation_output.xlsx")
 
     plt.plot(timeList, delta_yList)
+    plt.plot(timeList, delta_cList)
     plt.show()
 
 
