@@ -8,31 +8,33 @@ from symbols import *
 
 def Main(GUIData):
     # TODO: There is a derivative control discrepancy
-    # TODO: Make deadtime work
     # TODO: Animate
+    # TODO: order deteriorates if 0 on parameter
+    # TODO: Derivative control not working on first and below
+    # TODO: Error handling for incorrect entries (Ti = 0)
 
-    # Simulation Settings
+    # General Variables
+    delta_y = Function("delta_y")
+    processType = GUIData["ProcessType"]
     resolution = GUIData["StepSize"]
     timeEnd = GUIData["Duration"]
+    deadTime = GUIData["Parameters"]["ThetaP"] if GUIData["DeadTimeType"] else 0
 
-    # Pull GUI data used most often
-    processType = GUIData["ProcessType"]
-
-    # General Functions
-    delta_y = Function("delta_y")
-
-    # Define Controller Output
+    # Define Controller
     delta_ysp = GUIData["SetPointStepChange"]
     delta_e = delta_ysp - delta_y(t)
-    delta_c = 0*t  # TODO: Kinda Weird
+    delta_c = 0 * t  # TODO: Kinda Weird
     if GUIData["ControlType"]["pControl"]:
         delta_c += Kc * delta_e
     if GUIData["ControlType"]["iControl"]:
         delta_c += Kc / Ti * integral_error
     if GUIData["ControlType"]["dControl"]:
         delta_c += Kc * Td * diff(delta_e, t)
+    delta_c = delta_c.subs(
+        GUIData["Parameters"]
+    )
 
-    # Define Process Manual Control ODE, Controlled By Controller
+    # Define Process
     delta_d = GUIData["DisturbanceStepChange"]
     delta_u = delta_c
     if processType == "I":
@@ -47,67 +49,73 @@ def Main(GUIData):
     ODE = ODE.subs(
         GUIData["Parameters"]
     )
-    delta_c = delta_c.subs(
-        GUIData["Parameters"]
-    )
 
     # Define Initial Conditions
-    integrated_error = 0
     time = 0
-    timeList = [time]
-    delta_yList = [0]
-    delta_cList = [0]
+    integrated_error = 0
 
-    # Solve for useful things
-    order = ode_order(ODE, delta_y(t))
-    highestOrderDeriv = solve(ODE, diff(delta_y(t), (t, order)))[0]
-
-    # Define The Highest Order Derivative Equation, Controller Equation
-    # Define Initial Conditions
+    # Set Lambdas / Establish Derivative Arrays At Initial Conditions
     lambdas = []
     realDerivList = []
     seenDerivList = []
     realDerivListCache = []
+
+    order = ode_order(ODE, delta_y(t))
     for i in range(0, order):
         lambdas.append(diff(delta_y(t), (t, i)))
         realDerivList.append(0)
         seenDerivList.append(0)
     lambdas.append(integral_error)
 
+    print(order)
+    print(lambdas)
+    print(realDerivList)
+
+    # Lambdify Equations
+    highestOrderDeriv = solve(ODE, diff(delta_y(t), (t, order)))[0]
+
     highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
     controller = lambdify(lambdas, delta_c, 'numpy')
 
+    # Finalize Derivative Lists
     realDerivList.append(highestOrderDeriv(*realDerivList, integrated_error))
     realDerivListCache.append(realDerivList.copy())
-
-    # Deadtime Set
-    if GUIData["DeadTimeType"] and GUIData["Parameters"]["ThetaP"] > 0:
-        deadTime = GUIData["Parameters"]["ThetaP"]
-        seenDerivList.append(0)
+    if time >= deadTime:
+        seenDerivList = realDerivListCache.pop(0)
     else:
-        deadTime = 0
-        seenDerivList.append(highestOrderDeriv(*realDerivList[0:-1], integrated_error))
+        seenDerivList.append(0)
 
-    # Generate Points
+    print(realDerivList)
+    print(seenDerivList)
+
+    # Finalize Initial Conditions
+    timeList = [time]
+    delta_yList = [seenDerivList[0]]
+    delta_cList = [controller(*seenDerivList[0:-1], integrated_error)]
+
+    # Generate Curve
     while time <= timeEnd:
+        # New Time
         time += resolution
+
+        # Update Real Process. Seen Deriv List is from last time step
+        for i in range(order):
+            realDerivList[i] += realDerivList[i+1]*resolution
+        error = delta_ysp - seenDerivList[0]
+        integrated_error += error * resolution
+        realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
+        realDerivListCache.append(realDerivList.copy())
 
         # Update Seen Process
         if time >= deadTime:
             seenDerivList = realDerivListCache.pop(0)
 
-        # Update Real Process
-        for i in range(len(realDerivList)-1):
-            realDerivList[i] += realDerivList[i+1]*resolution
-        error = delta_ysp - seenDerivList[0]
-        integrated_error += error * resolution
-        realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
-
-        realDerivListCache.append(realDerivList.copy())
+        # Update Curves
         timeList.append(time)
         delta_yList.append(seenDerivList[0])
         delta_cList.append(controller(*seenDerivList[0:-1], integrated_error))
 
+    # Export Curve Data
     df = pd.DataFrame({
         "Time (s)": timeList,
         "Output (delta_y)": delta_yList,
@@ -116,8 +124,7 @@ def Main(GUIData):
     df.to_excel("simulation_output.xlsx", index=False)
     print("Excel file saved as simulation_output.xlsx")
 
+    # Plot Curve Data
     plt.plot(timeList, delta_yList)
     plt.plot(timeList, delta_cList)
     plt.show()
-
-
