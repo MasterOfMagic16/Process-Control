@@ -10,7 +10,6 @@ def Main(GUIData):
     # TODO: There is a derivative control discrepancy
     # TODO: Animate
     # TODO: order deteriorates if 0 on parameter
-    # TODO: Derivative control not working on first and below
     # TODO: Error handling for incorrect entries (Ti = 0)
 
     # General Variables
@@ -67,15 +66,11 @@ def Main(GUIData):
         seenDerivList.append(0)
     lambdas.append(integral_error)
 
-    print(order)
-    print(lambdas)
-    print(realDerivList)
-
     # Lambdify Equations
     highestOrderDeriv = solve(ODE, diff(delta_y(t), (t, order)))[0]
 
     highestOrderDeriv = lambdify(lambdas, highestOrderDeriv, 'numpy')
-    controller = lambdify(lambdas, delta_c, 'numpy')
+    controller = lambdify([delta_y(t), diff(delta_y(t)), integral_error], delta_c, 'numpy')
 
     # Finalize Derivative Lists
     realDerivList.append(highestOrderDeriv(*realDerivList, integrated_error))
@@ -85,13 +80,10 @@ def Main(GUIData):
     else:
         seenDerivList.append(0)
 
-    print(realDerivList)
-    print(seenDerivList)
-
     # Finalize Initial Conditions
     timeList = [time]
     delta_yList = [seenDerivList[0]]
-    delta_cList = [controller(*seenDerivList[0:-1], integrated_error)]
+    delta_cList = [controller(*seenDerivList[0:2], integrated_error)]
 
     # Generate Curve
     while time <= timeEnd:
@@ -113,7 +105,7 @@ def Main(GUIData):
         # Update Curves
         timeList.append(time)
         delta_yList.append(seenDerivList[0])
-        delta_cList.append(controller(*seenDerivList[0:-1], integrated_error))
+        delta_cList.append(controller(*seenDerivList[0:2], integrated_error))
 
     # Export Curve Data
     df = pd.DataFrame({
