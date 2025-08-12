@@ -1,12 +1,19 @@
 from sympy.solvers import solve
 from sympy import diff, lambdify, ode_order
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import pandas as pd
 
 from symbols import *
 
 
+
+
 def Main(GUIData):
+    global time
+    global integrated_error
+    global seenDerivList
+
     # TODO: There is a derivative control discrepancy
     # TODO: Animate
     # TODO: order deteriorates if 0 on parameter
@@ -18,6 +25,7 @@ def Main(GUIData):
     resolution = GUIData["StepSize"]
     timeEnd = GUIData["Duration"]
     deadTime = GUIData["Parameters"]["ThetaP"] if GUIData["DeadTimeType"] else 0
+    batchno = int(.05 / resolution)
 
     # Define Controller
     delta_ysp = GUIData["SetPointStepChange"]
@@ -85,14 +93,39 @@ def Main(GUIData):
     delta_yList = [seenDerivList[0]]
     delta_cList = [controller(*seenDerivList[0:2], integrated_error)]
 
-    # Generate Curve
-    while time <= timeEnd:
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, timeEnd)
+
+    line, = ax.plot([], [], 'g-')
+
+    def Init():
+        line.set_data([],[])
+        return line,
+
+    def Update(frame):
+        # Generate Batches of Points
+        for i in range(batchno):
+            GeneratePoint()
+        line.set_data(timeList, delta_yList)
+        ax.relim()
+        ax.autoscale_view(scalex=False, scaley=True)
+
+        window_width = 5
+        ax.set_xlim(time-5, time)
+
+        return line,
+
+    def GeneratePoint():
+        global time
+        global integrated_error
+        global seenDerivList
+
         # New Time
         time += resolution
 
         # Update Real Process. Seen Deriv List is from last time step
         for i in range(order):
-            realDerivList[i] += realDerivList[i+1]*resolution
+            realDerivList[i] += realDerivList[i + 1] * resolution
         error = delta_ysp - seenDerivList[0]
         integrated_error += error * resolution
         realDerivList[-1] = highestOrderDeriv(*realDerivList[0:-1], integrated_error)
@@ -107,6 +140,9 @@ def Main(GUIData):
         delta_yList.append(seenDerivList[0])
         delta_cList.append(controller(*seenDerivList[0:2], integrated_error))
 
+    ani = animation.FuncAnimation(fig, Update, init_func=Init, blit=False, interval=1000*resolution*batchno, cache_frame_data=False)
+    plt.show()
+
     # Export Curve Data
     df = pd.DataFrame({
         "Time (s)": timeList,
@@ -117,6 +153,3 @@ def Main(GUIData):
     print("Excel file saved as simulation_output.xlsx")
 
     # Plot Curve Data
-    plt.plot(timeList, delta_yList)
-    plt.plot(timeList, delta_cList)
-    plt.show()
