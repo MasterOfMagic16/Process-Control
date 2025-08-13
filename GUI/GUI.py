@@ -1,11 +1,14 @@
 import tkinter as tk
 from GUIVars import GUIVars
-from main import Main
+import main
+
+# Simulation
+sim = main.Simulation()
 
 # Root
 root = tk.Tk()
 root.title('Python Process Control Simulator')
-root.geometry('620x350')
+root.geometry('620x380')
 root.resizable(False, False)
 
 # Variable Tracker
@@ -155,7 +158,7 @@ tk.Entry(SPStepParamFrame, textvariable=guiVars.SPStepParam, justify='center').g
 
 
 # Simulation Frame
-SimulationFrame = tk.LabelFrame(root, text='Simulation', width=185, height=100, borderwidth=2, relief='groove')
+SimulationFrame = tk.LabelFrame(root, text='Simulation', width=185, height=130, borderwidth=2, relief='groove')
 SimulationFrame.grid_propagate(False)
 SimulationFrame.grid(row=2, columnspan=2)
 
@@ -167,12 +170,18 @@ DurationFrame = tk.Frame(SimulationFrame)
 tk.Label(SimulationFrame, text='Duration:').grid(row=1, column=0)
 tk.Entry(SimulationFrame, textvariable=guiVars.duration, justify='center').grid(row=1, column=1)
 
+
 # GO Button
 def RunSimulation():
-    Main(guiVars.GetData())
+    sim.Reset(guiVars.GetData())
+
+
+def UpdateSimulation():
+    sim.UpdateParams(guiVars.GetData())
 
 
 tk.Button(SimulationFrame, text='Run Simulation', command=RunSimulation).grid(row=2, columnspan=2, padx=5, pady=5)
+tk.Button(SimulationFrame, text='Update Simulation', command=UpdateSimulation).grid(row=3, columnspan=2, padx=5, pady=5)
 
 
 # Loop Root
