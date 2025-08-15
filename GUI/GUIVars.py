@@ -4,10 +4,9 @@ import tkinter as tk
 class GUIVars:
     def __init__(self):
         # Simulation Variables
-        self.stepSize = tk.DoubleVar()
-        self.stepSize.set(.001)
-        self.duration = tk.DoubleVar()
-        self.duration.set(10)
+        self.noiseSTD = tk.DoubleVar()
+        self.noiseSTD.set(0)
+
 
         # Process Select Variables
         self.processType = tk.StringVar()
@@ -60,8 +59,7 @@ class GUIVars:
                 },
             "DisturbanceStepChange": self.DistStepParam.get(),
             "SetPointStepChange": self.SPStepParam.get(),
-            "StepSize": self.stepSize.get(),
-            "Duration": self.duration.get()
+            "NoiseSTD": self.noiseSTD.get()
         }
 
         return GUIData

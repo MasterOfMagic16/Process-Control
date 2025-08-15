@@ -8,7 +8,7 @@ sim = main.Simulation()
 # Root
 root = tk.Tk()
 root.title('Python Process Control Simulator')
-root.geometry('620x380')
+root.geometry('620x400')
 root.resizable(False, False)
 
 # Variable Tracker
@@ -158,17 +158,13 @@ tk.Entry(SPStepParamFrame, textvariable=guiVars.SPStepParam, justify='center').g
 
 
 # Simulation Frame
-SimulationFrame = tk.LabelFrame(root, text='Simulation', width=185, height=130, borderwidth=2, relief='groove')
+SimulationFrame = tk.LabelFrame(root, text='Simulation', width=190, height=150, borderwidth=2, relief='groove')
 SimulationFrame.grid_propagate(False)
 SimulationFrame.grid(row=2, columnspan=2)
 
-StepSizeFrame = tk.Frame(SimulationFrame)
-tk.Label(SimulationFrame, text='Step Size:').grid(row=0, column=0)
-tk.Entry(SimulationFrame, textvariable=guiVars.stepSize, justify='center').grid(row=0, column=1)
-
-DurationFrame = tk.Frame(SimulationFrame)
-tk.Label(SimulationFrame, text='Duration:').grid(row=1, column=0)
-tk.Entry(SimulationFrame, textvariable=guiVars.duration, justify='center').grid(row=1, column=1)
+NoiseFrame = tk.Frame(SimulationFrame)
+tk.Label(SimulationFrame, text='Noise STD').grid(row=0, column=0)
+tk.Entry(SimulationFrame, textvariable=guiVars.noiseSTD, justify='center').grid(row=0, column=1)
 
 
 # GO Button
@@ -180,8 +176,13 @@ def UpdateSimulation():
     sim.UpdateParams(guiVars.GetData())
 
 
-tk.Button(SimulationFrame, text='Run Simulation', command=RunSimulation).grid(row=2, columnspan=2, padx=5, pady=5)
-tk.Button(SimulationFrame, text='Update Simulation', command=UpdateSimulation).grid(row=3, columnspan=2, padx=5, pady=5)
+def ExportSimulation():
+    sim.ExportCurve()
+
+
+tk.Button(SimulationFrame, text='Run Simulation', command=RunSimulation).grid(row=1, columnspan=2, padx=5, pady=5)
+tk.Button(SimulationFrame, text='Update Simulation', command=UpdateSimulation).grid(row=2, columnspan=2, padx=5, pady=5)
+tk.Button(SimulationFrame, text='Export CSV', command=ExportSimulation).grid(row=3, columnspan=2, padx=5, pady=5)
 
 
 # Loop Root
