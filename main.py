@@ -7,11 +7,15 @@ import numpy as np
 
 from symbols import *
 
-#TODO: Controller not affecting right, doesnt actually do anything
+#TODO: Display PV and CO numbers
+# TODO: There is a derivative control discrepancy
+# TODO: order deteriorates if 0 on parameter
+# TODO: Error handling for incorrect entries (Ti = 0)
+# TODO: Derivative Control Issues, causes oscillations, seen deriv list not same as real deriv list issue
 
 # Configs
 resolution = .05
-chunkSize = 1
+chunkSize = int(.05 / resolution)
 speedRatio = 1
 windowSize = 5
 derivListSize = 3
@@ -132,7 +136,6 @@ class Simulation:
         # DeadTime
         self.currentPos = round(self.time / resolution) - 1
         self.deadTimePos = max(0, self.deadTimePos, self.currentPos - round(self.deadTime / resolution)) - 1
-        print(self.deadTimePos)
 
         # Noise / Generate
         oldList = self.seenDerivList.copy()
@@ -199,7 +202,3 @@ class Simulation:
         })
         df.to_excel("simulation_output.xlsx", index=False)
         print("Excel file saved as simulation_output.xlsx")
-
-    # TODO: There is a derivative control discrepancy
-    # TODO: order deteriorates if 0 on parameter
-    # TODO: Error handling for incorrect entries (Ti = 0)
