@@ -11,11 +11,11 @@ from symbols import *
 # TODO: There is a derivative control discrepancy
 # TODO: order deteriorates if 0 on parameter
 # TODO: Error handling for incorrect entries (Ti = 0)
-# TODO: Derivative Control Issues, causes oscillations, seen deriv list not same as real deriv list issue
+# TODO: Add Controller Response Limit Time
 
 # Configs
 resolution = .05
-chunkSize = int(.05 / resolution)
+chunkSize = max(1, int(.05 / resolution))
 speedRatio = 1
 windowSize = 5
 derivListSize = 3
@@ -134,8 +134,13 @@ class Simulation:
 
         # Determine Seen Deriv List
         # DeadTime
-        self.currentPos = round(self.time / resolution) - 1
-        self.deadTimePos = max(0, self.deadTimePos, self.currentPos - round(self.deadTime / resolution)) - 1
+        self.currentPos = round(self.time / resolution)
+        self.deadTimePos = max(0, self.deadTimePos, self.currentPos - round(self.deadTime / resolution))
+
+        # Update Real Process. Controller is from last time step
+        for i in range(self.order):
+            self.realDerivList[i] += self.realDerivList[i + 1] * resolution
+        self.realDerivListCache.append(self.realDerivList.copy())
 
         # Noise / Generate
         oldList = self.seenDerivList.copy()
@@ -149,11 +154,9 @@ class Simulation:
         self.integrated_error += error * resolution
         self.controllerOutput = self.controllerFunc(*self.seenDerivList[0:2], self.integrated_error)
 
-        # Update Real Process. Controller is from last time step
-        for i in range(self.order):
-            self.realDerivList[i] += self.realDerivList[i + 1] * resolution
-        self.realDerivList[self.order] = self.highestOrderDerivFunc(*self.realDerivList[0:self.order], self.controllerOutput)
-        self.realDerivListCache.append(self.realDerivList.copy())
+        self.realDerivList[self.order] = self.highestOrderDerivFunc(*self.realDerivList[0:self.order],
+                                                                    self.controllerOutput)
+
 
         # Update Curves
         self.timeList.append(self.time)

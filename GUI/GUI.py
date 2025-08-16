@@ -184,6 +184,5 @@ tk.Button(SimulationFrame, text='Run Simulation', command=RunSimulation).grid(ro
 tk.Button(SimulationFrame, text='Update Simulation', command=UpdateSimulation).grid(row=2, columnspan=2, padx=5, pady=5)
 tk.Button(SimulationFrame, text='Export CSV', command=ExportSimulation).grid(row=3, columnspan=2, padx=5, pady=5)
 
-
 # Loop Root
 root.mainloop()
