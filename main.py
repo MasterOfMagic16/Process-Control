@@ -15,6 +15,7 @@ from symbols import *
 
 # Configs
 resolution = .05
+controllerResolution = .5
 chunkSize = max(1, int(.05 / resolution))
 speedRatio = 1
 windowSize = 5
@@ -152,7 +153,9 @@ class Simulation:
         # Next Step Controller Output
         error = self.delta_ysp - self.seenDerivList[0]
         self.integrated_error += error * resolution
-        self.controllerOutput = self.controllerFunc(*self.seenDerivList[0:2], self.integrated_error)
+        controllerInterval = int(controllerResolution / resolution)
+        if self.currentPos % controllerInterval == 0:
+            self.controllerOutput = self.controllerFunc(*self.seenDerivList[0:2], self.integrated_error)
 
         self.realDerivList[self.order] = self.highestOrderDerivFunc(*self.realDerivList[0:self.order],
                                                                     self.controllerOutput)
