@@ -11,12 +11,15 @@ from symbols import *
 # TODO: There is a derivative control discrepancy
 # TODO: order deteriorates if 0 on parameter
 # TODO: Error handling for incorrect entries (Ti = 0)
-# TODO: Add Controller Response Limit Time
+# TODO: Change controller resolution to sample rate
 
 # Configs
-resolution = .05
-controllerResolution = .5
+resolution = .0005
+sampleRateResolution = .5
+controllerResponseResolution = sampleRateResolution
 chunkSize = max(1, int(.05 / resolution))
+sampleRateInterval = int(sampleRateResolution / resolution)
+controllerResponseInterval = int(controllerResponseResolution / resolution)
 speedRatio = 1
 windowSize = 5
 derivListSize = 3
@@ -144,22 +147,24 @@ class Simulation:
         self.realDerivListCache.append(self.realDerivList.copy())
 
         # Noise / Generate
-        oldList = self.seenDerivList.copy()
-        self.seenDerivList = self.realDerivListCache[self.deadTimePos].copy()
-        self.seenDerivList[0] += np.random.normal(0, self.noiseSTD)
-        for i in range(1, derivListSize):
-            self.seenDerivList[i] = (self.seenDerivList[i - 1] - oldList[i - 1]) / resolution
+        if self.currentPos % sampleRateInterval == 0:
+            print("Sample update")
+            oldList = self.seenDerivList.copy()
+            self.seenDerivList = self.realDerivListCache[self.deadTimePos].copy()
+            self.seenDerivList[0] += np.random.normal(0, self.noiseSTD)
+            for i in range(1, derivListSize):
+                self.seenDerivList[i] = (self.seenDerivList[i - 1] - oldList[i - 1]) / sampleRateResolution
 
-        # Next Step Controller Output
-        error = self.delta_ysp - self.seenDerivList[0]
-        self.integrated_error += error * resolution
-        controllerInterval = int(controllerResolution / resolution)
-        if self.currentPos % controllerInterval == 0:
+            # Next Step Controller Output
+            error = self.delta_ysp - self.seenDerivList[0]
+            self.integrated_error += error * sampleRateResolution
+
+        if self.currentPos % controllerResponseInterval == 0:
+            print("Controller Update")
             self.controllerOutput = self.controllerFunc(*self.seenDerivList[0:2], self.integrated_error)
 
         self.realDerivList[self.order] = self.highestOrderDerivFunc(*self.realDerivList[0:self.order],
                                                                     self.controllerOutput)
-
 
         # Update Curves
         self.timeList.append(self.time)
